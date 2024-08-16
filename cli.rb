@@ -1,12 +1,8 @@
+
 require "thor"
 require "exif"
 
 class ExifCli < Thor
-
-  desc "hello", "Say Hello"
-  def hello(name)
-    puts "Hello, #{name}"
-  end
 
   option :output, :aliases => :o, :default => 'images.csv', :banner => 'File to write to. Must be a .csv or .html'
   desc "extract", "Extract GPS data from image directory"
@@ -27,22 +23,20 @@ class ExifCli < Thor
     all_files = get_files(directory)
 
     all_files.each do |file|
+      image = { :filename => file, :lat => nil, :lon => nil }
       begin        
         geo_data = Exif::Data.new(File.open(file))[:gps]
 
-        lat = geo_decimal(*geo_data[:gps_latitude], geo_data[:gps_latitude_ref]) unless geo_data.empty?
-        lon = geo_decimal(*geo_data[:gps_longitude], geo_data[:gps_longitude_ref]) unless geo_data.empty?
-
-        images << { :filename => file, :lat => lat, :lon => lon }
-
-        puts "#{file} - #{geo_data} - #{lat} : #{lon}"
+        image[:lat] = geo_decimal(*geo_data[:gps_latitude], geo_data[:gps_latitude_ref]) unless geo_data.empty?
+        image[:lon] = geo_decimal(*geo_data[:gps_longitude], geo_data[:gps_longitude_ref]) unless geo_data.empty?
       rescue Exception => e
-        puts "#{file} - ERROR: #{e}"
+        puts "#{file} - WARNING: #{e}"
       end
+      images << image
     end
 
     output_file.end_with?(".html") ? write_html(images, output_file) : write_csv(images, output_file)
-    puts "Wrote image data to #{output_file}"
+    puts "Found #{images.size} images and wrote to #{output_file}"
   end
   
   private
