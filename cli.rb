@@ -1,6 +1,5 @@
-
-require "thor"
 require "exif"
+require "thor"
 
 class ExifCli < Thor
 
@@ -18,11 +17,9 @@ class ExifCli < Thor
       return -1
     end
 
-    images = []
-
     all_files = get_files(directory)
-
-    all_files.each do |file|
+    
+    images = all_files.map do |file|
       image = { :filename => file, :lat => nil, :lon => nil }
       begin        
         geo_data = Exif::Data.new(File.open(file))[:gps]
@@ -32,7 +29,7 @@ class ExifCli < Thor
       rescue Exception => e
         puts "#{file} - WARNING: #{e}"
       end
-      images << image
+      image
     end
 
     output_file.end_with?(".html") ? write_html(images, output_file) : write_csv(images, output_file)
